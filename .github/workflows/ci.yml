@@ -82,3 +82,39 @@ jobs:
         run: |
           docker tag knitventure-frontend:ci "$IMAGE:$COMMIT_SHA"
           docker push "$IMAGE:$COMMIT_SHA"
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: frontend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    concurrency:
+      group: knitventure-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    steps:
+      - name: Check out SSH host key
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Deploy published image
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPLOY_SSH_KEY: ${{ secrets.KNITVENTURE_DEPLOY_SSH_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          current_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)
+          if [[ "$GITHUB_SHA" != "$current_sha" ]]; then
+            echo "main has moved to $current_sha. Skipping $GITHUB_SHA."
+            exit 0
+          fi
+
+          key_file=$(mktemp)
+          trap 'rm -f -- "$key_file"' EXIT
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$key_file"
+          ssh -n -i "$key_file" -o IdentitiesOnly=yes -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes -o UserKnownHostsFile=deploy/known_hosts \
+            -o ConnectTimeout=10 root@138.201.187.224 "$GITHUB_SHA"
