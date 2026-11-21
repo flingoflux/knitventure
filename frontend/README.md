@@ -45,7 +45,7 @@ Ein öffentliches Image kann mit `docker pull ghcr.io/flingoflux/knitventure:<vo
 
 ## Auf Hetzner deployen und zurückwechseln
 
-Nach einem erfolgreichen Push-Build auf `main` startet der Workflow den Job `deploy`. Er übergibt die veröffentlichte Commit-ID per SSH an das Deployment-Skript auf der VM. Die VM zieht das Image und startet den Caddy-Container neu. Nach erfolgreichem HTTP-Test speichert das Skript die Commit-ID in `/opt/knitventure/.env`.
+Nach einem erfolgreichen Push-Build auf `main` startet der Workflow den Job `deploy`. Er übergibt die veröffentlichte Commit-ID per SSH über Tailscale an das Deployment-Skript auf der VM. Die VM zieht das Image und startet den Caddy-Container neu. Nach erfolgreichem HTTP-Test speichert das Skript die Commit-ID in `/opt/knitventure/.env`.
 
 Für ein manuelles Update per SSH auf der VM ausführen und `<commit-id>` durch die vollständige ID eines veröffentlichten Images ersetzen.
 
@@ -55,4 +55,4 @@ Für ein manuelles Update per SSH auf der VM ausführen und `<commit-id>` durch 
 
 Für einen Rückwechsel denselben Befehl mit der vorherigen Commit-ID ausführen. Bei einem fehlgeschlagenen Start oder HTTP-Test versucht das Skript, die in `.env` gespeicherte Version wiederherzustellen. Mit `docker compose ps` unter `/opt/knitventure` lässt sich das laufende Image prüfen. Die Seite ist unter http://138.201.187.224/ erreichbar.
 
-Die Automatisierung verwendet das Repository-Secret `KNITVENTURE_DEPLOY_SSH_KEY`. Auf der VM ist dieser Schlüssel auf `/opt/knitventure/deploy.sh` beschränkt. Der SSH-Hostschlüssel liegt in [`deploy/known_hosts`](../deploy/known_hosts). Wenn sich das Deployment-Skript ändert, muss die aktualisierte Datei auf der VM unter `/opt/knitventure/deploy.sh` installiert werden.
+Der Deployment-Job verbindet sich mit einer kurzlebigen OIDC-Identität und dem Tag `tag:knitventure-ci` mit dem Tailnet. Der Grant erlaubt TCP 22 zur VM mit `tag:knitventure-vm`. Das Repository-Secret `KNITVENTURE_TAILSCALE_DEPLOY_KEY` enthält den SSH-Schlüssel für `knitventure-deploy`. Der Schlüssel gilt für Tailscale-Quelladressen und führt ausschließlich `/opt/knitventure/deploy.sh` aus. Der SSH-Hostschlüssel liegt in [`deploy/known_hosts`](../deploy/known_hosts). Wenn sich das Deployment-Skript ändert, muss die aktualisierte Datei auf der VM unter `/opt/knitventure/deploy.sh` installiert werden.

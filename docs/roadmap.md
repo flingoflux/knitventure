@@ -54,4 +54,4 @@ Der [Workflow-Lauf 44948730197](https://github.com/flingoflux/knitventure/action
 
 Die [Frontend-README](../frontend/README.md#auf-hetzner-deployen-und-zurückwechseln) beschreibt die Befehle und den SSH-Zugang für den Deployment-Job.
 
-Nach einem erfolgreichen Push-Build auf `main` übergibt der [Deployment-Job](../.github/workflows/ci.yml) den veröffentlichten Image-Tag per SSH an die VM.
+Nach einem erfolgreichen Push-Build auf `main` übergibt der [Deployment-Job](../.github/workflows/ci.yml) den veröffentlichten Image-Tag über Tailscale per SSH an die VM. Die Hetzner-Firewall erlaubt öffentliches SSH ausschließlich von der freigegebenen IP des Macs.

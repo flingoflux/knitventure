@@ -93,16 +93,17 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: read
+      id-token: write
     steps:
       - name: Check out SSH host key
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Deploy published image
+      - name: Verify this is still the main commit
+        id: main
         env:
           GH_TOKEN: ${{ github.token }}
-          DEPLOY_SSH_KEY: ${{ secrets.KNITVENTURE_DEPLOY_SSH_KEY }}
         shell: bash
         run: |
           set -euo pipefail
@@ -111,10 +112,27 @@ jobs:
             echo "main has moved to $current_sha. Skipping $GITHUB_SHA."
             exit 0
           fi
+          echo 'deploy=true' >> "$GITHUB_OUTPUT"
 
+      - name: Join the Knitventure tailnet
+        if: steps.main.outputs.deploy == 'true'
+        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ secrets.TS_AUDIENCE }}
+          tags: tag:knitventure-ci
+          ping: 100.124.224.112
+
+      - name: Deploy published image
+        if: steps.main.outputs.deploy == 'true'
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.KNITVENTURE_TAILSCALE_DEPLOY_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
           key_file=$(mktemp)
           trap 'rm -f -- "$key_file"' EXIT
           printf '%s\n' "$DEPLOY_SSH_KEY" > "$key_file"
           ssh -n -i "$key_file" -o IdentitiesOnly=yes -o BatchMode=yes \
             -o StrictHostKeyChecking=yes -o UserKnownHostsFile=deploy/known_hosts \
-            -o ConnectTimeout=10 root@138.201.187.224 "$GITHUB_SHA"
+            -o ConnectTimeout=10 knitventure-deploy@100.124.224.112 "$GITHUB_SHA"
