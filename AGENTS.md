@@ -1,5 +1,7 @@
 # Deployment und Techstack
 
+Die geplanten Schritte und ihr Fortschritt stehen in der [Deployment-Roadmap](docs/roadmap.md).
+
 - Deployment auf einer Hetzner-Cloud-VM (CX23, Ubuntu 24.04 LTS mit Docker CE).
 - Docker Compose betreibt Caddy, Spring Boot und PostgreSQL auf derselben VM.
 - Angular (TypeScript) wird statisch von Caddy ausgeliefert. Caddy leitet API- und Login-Anfragen an Spring Boot weiter und übernimmt HTTPS, sobald eine Domain eingerichtet ist.
@@ -32,3 +34,14 @@ npm run build
 ```
 
 Die statischen Dateien liegen danach unter `frontend/dist/knitventure/browser/`, relativ zum Repository-Stamm, und können von Caddy ausgeliefert werden.
+
+# Frontend als Container
+
+Die folgenden Befehle werden im Repository-Stamm ausgeführt und benötigen Docker.
+
+```sh
+docker build -t knitventure-frontend:local ./frontend
+docker run --rm -p 127.0.0.1:8080:80 knitventure-frontend:local
+```
+
+Die Seite ist unter http://localhost:8080 erreichbar. Der Container wird mit `Ctrl+C` beendet.
