@@ -47,7 +47,7 @@ jobs:
           docker run --rm knitventure-frontend:ci caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
           container=$(docker run --rm -d -p 127.0.0.1:8080:80 knitventure-frontend:ci)
           trap 'docker stop "$container"' EXIT
-          curl --fail --silent --show-error --retry 10 --retry-connrefused --retry-delay 1 http://127.0.0.1:8080/ -o /tmp/index.html
+          curl --fail --silent --show-error --retry 10 --retry-all-errors --retry-connrefused --retry-delay 1 http://127.0.0.1:8080/ -o /tmp/index.html
           grep -q 'Willkommen bei Knitventure' /tmp/index.html
           curl --fail --silent --show-error http://127.0.0.1:8080/direkter-aufruf -o /tmp/fallback.html
           cmp /tmp/index.html /tmp/fallback.html
