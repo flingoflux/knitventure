@@ -34,3 +34,11 @@ docker run --rm -p 127.0.0.1:8080:80 knitventure-frontend:local
 Die Willkommensseite ist unter http://localhost:8080 erreichbar. `Ctrl+C` beendet den Container und entfernt ihn. Das Image enthält Caddy und die gebauten statischen Dateien. Caddy liefert bei direkten Aufrufen von Angular-Routen die `index.html` aus.
 
 Die weiteren Schritte stehen in der [Deployment-Roadmap](../docs/roadmap.md).
+
+## GitHub Actions und Container Registry
+
+Der Workflow `.github/workflows/ci.yml` baut bei Pull Requests und Pushes auf `main` ein Linux/AMD64-Image für die vorgesehene CX23-VM. Vor der Veröffentlichung prüft er die Caddy-Konfiguration, Startseite, statische Dateien und den SPA-Fallback. Auf `main` veröffentlicht er das geprüfte Image unter `ghcr.io/flingoflux/knitventure:<vollständige-commit-id>`. Er lässt sich auch manuell auf `main` starten.
+
+Die Anmeldung verwendet den automatisch bereitgestellten `GITHUB_TOKEN` mit `packages: write`. Das Container-Paket muss nach der ersten Veröffentlichung in seinen GitHub-Paketeinstellungen über „Change visibility“ auf „Public“ gestellt werden, damit die VM es anonym abrufen kann.
+
+Ein öffentliches Image kann mit `docker pull ghcr.io/flingoflux/knitventure:<vollständige-commit-id>` heruntergeladen werden.
