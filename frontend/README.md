@@ -35,13 +35,15 @@ Die Willkommensseite ist unter http://localhost:8080 erreichbar. `Ctrl+C` beende
 
 Die weiteren Schritte stehen in der [Deployment-Roadmap](../docs/roadmap.md).
 
-## GitHub Actions und Container Registry
+## CI/CD
 
-Der Workflow `.github/workflows/ci.yml` baut bei Pull Requests und Pushes auf `main` ein Linux/AMD64-Image für die vorgesehene CX23-VM. Vor der Veröffentlichung prüft er die Caddy-Konfiguration, Startseite, statische Dateien und den SPA-Fallback. Auf `main` veröffentlicht er das geprüfte Image unter `ghcr.io/flingoflux/knitventure:<vollständige-commit-id>`. Er lässt sich auch manuell auf `main` starten.
+Der [GitHub-Actions-Workflow](../.github/workflows/ci.yml) baut bei Pull Requests, Pushes auf `main` und manuellen Starts ein `linux/amd64`-Image für die vorgesehene CX23-VM. Er prüft Caddy-Konfiguration, Startseite, JavaScript, CSS und SPA-Fallback. Auf `main` veröffentlicht er das geprüfte Image mit der vollständigen Commit-ID als Tag in GHCR.
 
-Die Anmeldung verwendet den automatisch bereitgestellten `GITHUB_TOKEN` mit `packages: write`. Das Container-Paket ist öffentlich und kann von der VM anonym abgerufen werden. Die Sichtbarkeit lässt sich in den GitHub-Paketeinstellungen kontrollieren.
+Die Veröffentlichung verwendet `GITHUB_TOKEN` mit `packages: write`. Das Image ist öffentlich und lässt sich ohne Anmeldung abrufen. Im folgenden Befehl `<commit-id>` durch die vollständige ID des erfolgreichen Workflow-Laufs ersetzen.
 
-Ein öffentliches Image kann mit `docker pull ghcr.io/flingoflux/knitventure:<vollständige-commit-id>` heruntergeladen werden.
+```sh
+docker pull ghcr.io/flingoflux/knitventure:<commit-id>
+```
 
 ## Auf Hetzner deployen und zurückwechseln
 

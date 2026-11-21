@@ -45,3 +45,10 @@ docker run --rm -p 127.0.0.1:8080:80 knitventure-frontend:local
 ```
 
 Die Seite ist unter http://localhost:8080 erreichbar. Der Container wird mit `Ctrl+C` beendet.
+
+# CI/CD
+
+- `.github/workflows/ci.yml` baut bei Pull Requests, Pushes auf `main` und manuellen Starts das Frontend-Image für `linux/amd64`.
+- Vor der Veröffentlichung werden Caddy-Konfiguration, Startseite, JavaScript, CSS und SPA-Fallback geprüft.
+- Auf `main` wird das geprüfte Image als `ghcr.io/flingoflux/knitventure:<vollständige-commit-id>` veröffentlicht. Die Anmeldung erfolgt mit `GITHUB_TOKEN` und `packages: write`.
+- Das Image ist öffentlich abrufbar. Nach einem erfolgreichen Push-Build auf `main` deployt GitHub Actions das geprüfte Image per SSH über Tailscale auf die Hetzner-VM.
