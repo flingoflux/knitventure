@@ -1,0 +1,4 @@
+* { box-sizing: border-box; }
+html { color-scheme: light; }
+body { margin: 0; background: #eef2e9; color: #203d35; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+a:focus-visible { outline: 3px solid #bd563f; outline-offset: 6px; border-radius: 2px; }
