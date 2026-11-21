@@ -15,10 +15,12 @@ Lokal auf Docker Desktop (Linux/ARM64) geprüft. Die Container-Konfiguration ver
 
 ## 2. Build über GitHub automatisieren
 
-- [ ] GitHub-Actions-Workflow für den Image-Build bei Pull Requests einrichten.
-- [ ] Bei Pushes auf `main` das Image nach `ghcr.io/flingoflux/knitventure` veröffentlichen.
-- [ ] Images mit der Commit-ID versionieren und für die Architektur der Hetzner-VM bauen.
-- [ ] Container-Paket öffentlich zugänglich machen und Abruf ohne Anmeldung prüfen.
+- [x] GitHub-Actions-Workflow für den Image-Build bei Pull Requests einrichten.
+- [x] Bei Pushes auf `main` das Image nach `ghcr.io/flingoflux/knitventure` veröffentlichen.
+- [x] Images mit der Commit-ID versionieren und für die Architektur der Hetzner-VM bauen.
+- [x] Container-Paket öffentlich zugänglich machen und Abruf ohne Anmeldung prüfen.
+
+Geprüft mit [Workflow-Lauf 44947214203](https://github.com/flingoflux/knitventure/actions/runs/44947214203). Das Image `ghcr.io/flingoflux/knitventure:5047fb6483f69d927c05a0491018724f230dee21` wurde erfolgreich für Linux/AMD64 gebaut, per HTTP geprüft, veröffentlicht und mit leerer Docker-Konfiguration anonym heruntergeladen. Die öffentliche Paketsichtbarkeit wurde kontrolliert.
 
 ## 3. Hetzner-VM vorbereiten
 
