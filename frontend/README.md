@@ -42,3 +42,17 @@ Der Workflow `.github/workflows/ci.yml` baut bei Pull Requests und Pushes auf `m
 Die Anmeldung verwendet den automatisch bereitgestellten `GITHUB_TOKEN` mit `packages: write`. Das Container-Paket ist öffentlich und kann von der VM anonym abgerufen werden. Die Sichtbarkeit lässt sich in den GitHub-Paketeinstellungen kontrollieren.
 
 Ein öffentliches Image kann mit `docker pull ghcr.io/flingoflux/knitventure:<vollständige-commit-id>` heruntergeladen werden.
+
+## Auf Hetzner deployen und zurückwechseln
+
+Nach einem erfolgreichen Push-Build auf `main` startet der Workflow den Job `deploy`. Er übergibt die veröffentlichte Commit-ID per SSH an das Deployment-Skript auf der VM. Die VM zieht das Image und startet den Caddy-Container neu. Nach erfolgreichem HTTP-Test speichert das Skript die Commit-ID in `/opt/knitventure/.env`.
+
+Für ein manuelles Update per SSH auf der VM ausführen und `<commit-id>` durch die vollständige ID eines veröffentlichten Images ersetzen.
+
+```sh
+/opt/knitventure/deploy.sh <commit-id>
+```
+
+Für einen Rückwechsel denselben Befehl mit der vorherigen Commit-ID ausführen. Bei einem fehlgeschlagenen Start oder HTTP-Test versucht das Skript, die in `.env` gespeicherte Version wiederherzustellen. Mit `docker compose ps` unter `/opt/knitventure` lässt sich das laufende Image prüfen. Die Seite ist unter http://138.201.187.224/ erreichbar.
+
+Die Automatisierung verwendet das Repository-Secret `KNITVENTURE_DEPLOY_SSH_KEY`. Auf der VM ist dieser Schlüssel auf `/opt/knitventure/deploy.sh` beschränkt. Der SSH-Hostschlüssel liegt in [`deploy/known_hosts`](../deploy/known_hosts). Wenn sich das Deployment-Skript ändert, muss die aktualisierte Datei auf der VM unter `/opt/knitventure/deploy.sh` installiert werden.

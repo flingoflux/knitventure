@@ -1,0 +1,13 @@
+services:
+  caddy:
+    image: ghcr.io/flingoflux/knitventure:${KNITVENTURE_IMAGE_TAG:?Set KNITVENTURE_IMAGE_TAG to the full commit SHA}
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:
