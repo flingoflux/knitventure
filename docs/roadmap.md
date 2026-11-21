@@ -48,8 +48,10 @@ Nach einem Neustart der VM lief der Caddy-Container automatisch wieder und die W
 - [x] Eine neue Image-Version manuell per SSH deployen.
 - [x] Rückwechsel auf eine vorherige Commit-Version prüfen.
 - [x] Deployment-Befehle und Rückwechsel in der README dokumentieren.
-- [ ] Deployment anschließend über GitHub Actions automatisieren.
+- [x] Deployment anschließend über GitHub Actions automatisieren.
 
 Der [Workflow-Lauf 44948730197](https://github.com/flingoflux/knitventure/actions/runs/44948730197) veröffentlichte das Image mit Tag `197ab4c7598f9bf69ac96496d4a60fb826514731`. Geprüft wurden das Update auf diesen Tag, der Rückwechsel auf `5047fb6483f69d927c05a0491018724f230dee21` und das erneute Update. Bei jedem Wechsel wurden das laufende Image und die öffentliche Willkommensseite kontrolliert.
 
 Die [Frontend-README](../frontend/README.md#auf-hetzner-deployen-und-zurückwechseln) beschreibt die Befehle und den SSH-Zugang für den Deployment-Job.
+
+Nach einem erfolgreichen Push-Build auf `main` übergibt der [Deployment-Job](../.github/workflows/ci.yml) den veröffentlichten Image-Tag per SSH an die VM.
