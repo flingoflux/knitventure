@@ -6,6 +6,13 @@
     <p class="eyebrow">Schön, dass du da bist.</p>
     <h1>Willkommen bei<br><span>Knitventure.</span></h1>
     <p class="intro">Hier beginnt etwas Neues.<br>Mach es dir gemütlich, wir legen bald los.</p>
+    <div role="status">
+      @if (commitId(); as id) {
+        <p>Backend erreichbar · <code>{{ id }}</code></p>
+      } @else if (statusFailed()) {
+        <p>Backend nicht erreichbar</p>
+      }
+    </div>
   </main>
 
   <footer><span>Knitventure</span><span>Mit Vorfreude gemacht.</span></footer>

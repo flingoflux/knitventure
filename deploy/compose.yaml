@@ -1,9 +1,12 @@
 services:
+  backend:
+    image: ${KNITVENTURE_BACKEND_IMAGE:-ghcr.io/flingoflux/knitventure-backend}:${KNITVENTURE_IMAGE_TAG:?Set KNITVENTURE_IMAGE_TAG to the full commit SHA}
+    restart: unless-stopped
   caddy:
-    image: ghcr.io/flingoflux/knitventure:${KNITVENTURE_IMAGE_TAG:?Set KNITVENTURE_IMAGE_TAG to the full commit SHA}
+    image: ${KNITVENTURE_FRONTEND_IMAGE:-ghcr.io/flingoflux/knitventure}:${KNITVENTURE_IMAGE_TAG:?Set KNITVENTURE_IMAGE_TAG to the full commit SHA}
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "${KNITVENTURE_HTTP_BIND:-80}:80"
     volumes:
       - caddy_data:/data
       - caddy_config:/config

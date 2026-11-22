@@ -2,6 +2,8 @@
 	root * /srv
 	encode gzip
 	route {
+		@api path /api /api/*
+		reverse_proxy @api backend:8080
 		try_files {path} /index.html
 		header /index.html Cache-Control "public, max-age=0, must-revalidate"
 		file_server

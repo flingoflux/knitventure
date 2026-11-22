@@ -20,9 +20,10 @@ Caddy liefert die gebaute SPA aus. Ein mehrstufiger Docker-Build bündelt die st
 
 | Baustein | Verantwortung |
 | --- | --- |
-| [Angular-Anwendung](../frontend/src/app/) | Willkommensseite im Browser anzeigen |
-| [Caddy](../frontend/Caddyfile) | Statische Dateien ausliefern und direkte SPA-Aufrufe an die Startdatei weitergeben |
-| [GitHub-Actions-Workflow](../.github/workflows/ci.yml) | Image bauen, prüfen, veröffentlichen und das Deployment anstoßen |
+| [Angular-Anwendung](../frontend/src/app/) | Willkommensseite und Backend-Status im Browser anzeigen |
+| [Caddy](../frontend/Caddyfile) | Statische Dateien ausliefern, direkte SPA-Aufrufe bedienen und API-Anfragen an Spring Boot weiterleiten |
+| [Spring Boot](../backend/) | Bekannte Build-Version über den [OpenAPI-Vertrag](../api/openapi.yaml) bereitstellen |
+| [GitHub-Actions-Workflow](../.github/workflows/ci.yml) | Image-Paar bauen, prüfen, veröffentlichen und das Deployment anstoßen |
 | [Deploy-Skript](../deploy/deploy.sh) | Image-Version auf der VM wechseln, per HTTP prüfen und bei einem Fehler die vorherige Version wieder starten |
 
 ## 6. Laufzeitsicht
@@ -33,6 +34,8 @@ Caddy liefert die gebaute SPA aus. Ein mehrstufiger Docker-Build bündelt die st
 ## 7. Verteilungssicht
 
 Die VM zieht das öffentlich abrufbare Image aus GHCR. Die [Compose-Konfiguration](../deploy/compose.yaml) betreibt einen Caddy-Container, veröffentlicht Port 80 und bindet persistente Volumes für Caddys Daten und Konfiguration ein. Der Browser führt die Angular-Anwendung aus.
+
+Der [lokale Compose-Stack](../compose.yaml) betreibt Caddy und Spring Boot. Der gemeinsame Rollout ist im Repository vorbereitet. Die produktive Umstellung ist in der Roadmap offen.
 
 ## 8. Querschnittliche Konzepte
 

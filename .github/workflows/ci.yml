@@ -1,4 +1,4 @@
-name: Frontend image
+name: Build and deploy Knitventure
 
 on:
   pull_request:
@@ -10,14 +10,15 @@ permissions:
   contents: read
 
 jobs:
-  frontend:
+  images:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
     env:
-      IMAGE: ghcr.io/flingoflux/knitventure
+      FRONTEND_IMAGE: ghcr.io/flingoflux/knitventure
+      BACKEND_IMAGE: ghcr.io/flingoflux/knitventure-backend
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -27,7 +28,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-      - name: Build image
+      - name: Build frontend image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: ./frontend
@@ -37,55 +38,79 @@ jobs:
           labels: |
             org.opencontainers.image.source=https://github.com/flingoflux/knitventure
             org.opencontainers.image.revision=${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
 
-      - name: Validate Caddy and check HTTP delivery
+      - name: Run Maven tests
+        shell: bash
+        run: JAVA_HOME="$JAVA_HOME_21_X64" mvn -B -ntp -f backend/pom.xml verify
+
+      - name: Build backend image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ./backend
+          platforms: linux/amd64
+          load: true
+          tags: knitventure-backend:ci
+          build-args: KNITVENTURE_COMMIT_ID=${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/flingoflux/knitventure
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+      - name: Validate OpenAPI and check the Compose stack
+        env:
+          KNITVENTURE_IMAGE_TAG: ci
+          KNITVENTURE_FRONTEND_IMAGE: knitventure-frontend
+          KNITVENTURE_BACKEND_IMAGE: knitventure-backend
+          KNITVENTURE_HTTP_BIND: 127.0.0.1:8080
         shell: bash
         run: |
           set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/knitventure-ci"
+          python="$RUNNER_TEMP/knitventure-ci/bin/python"
+          "$python" -m pip install -r scripts/requirements-ci.txt
+          "$python" scripts/check-stack.py
           docker run --rm knitventure-frontend:ci caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
-          container=$(docker run --rm -d -p 127.0.0.1:8080:80 knitventure-frontend:ci)
-          trap 'docker stop "$container"' EXIT
-          curl --fail --silent --show-error --retry 10 --retry-all-errors --retry-connrefused --retry-delay 1 http://127.0.0.1:8080/ -o /tmp/index.html
-          grep -q 'Willkommen bei Knitventure' /tmp/index.html
-          curl --fail --silent --show-error http://127.0.0.1:8080/direkter-aufruf -o /tmp/fallback.html
-          cmp /tmp/index.html /tmp/fallback.html
-          python3 - <<'PY'
-          import re
-          import urllib.request
-          from pathlib import Path
+          trap 'docker compose -f deploy/compose.yaml down -v' EXIT
+          docker compose -f deploy/compose.yaml up -d --pull never
+          "$python" scripts/check-stack.py http://127.0.0.1:8080
 
-          html = Path('/tmp/index.html').read_text()
-          assets = re.findall(r'(?:src|href)="([^"]+\.(?:js|css))"', html)
-          assert any(asset.endswith('.js') for asset in assets)
-          assert any(asset.endswith('.css') for asset in assets)
-          for asset in assets:
-              with urllib.request.urlopen('http://127.0.0.1:8080/' + asset, timeout=5) as response:
-                  assert response.status == 200
-                  assert 'text/html' not in response.headers['Content-Type']
-                  assert response.read()
-          PY
+      - name: Verify deployment rollback
+        run: bash scripts/check-rollback.sh knitventure-frontend:ci knitventure-backend:ci
 
       - name: Log in to GHCR
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish tested image
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+      - name: Publish both tested images
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           COMMIT_SHA: ${{ github.sha }}
         run: |
-          docker tag knitventure-frontend:ci "$IMAGE:$COMMIT_SHA"
-          docker push "$IMAGE:$COMMIT_SHA"
+          set -euo pipefail
+          docker tag knitventure-frontend:ci "$FRONTEND_IMAGE:$COMMIT_SHA"
+          docker tag knitventure-backend:ci "$BACKEND_IMAGE:$COMMIT_SHA"
+          docker push "$FRONTEND_IMAGE:$COMMIT_SHA"
+          docker push "$BACKEND_IMAGE:$COMMIT_SHA"
+
+      - name: Verify public image access
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: |
+          set -euo pipefail
+          anonymous_config=$(mktemp -d)
+          DOCKER_CONFIG="$anonymous_config" docker manifest inspect "$FRONTEND_IMAGE:$GITHUB_SHA" >/dev/null
+          DOCKER_CONFIG="$anonymous_config" docker manifest inspect "$BACKEND_IMAGE:$GITHUB_SHA" >/dev/null
 
   deploy:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: frontend
+    needs: images
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     concurrency:
@@ -123,7 +148,7 @@ jobs:
           tags: tag:knitventure-ci
           ping: 100.124.224.112
 
-      - name: Deploy published image
+      - name: Deploy published images
         if: steps.main.outputs.deploy == 'true'
         env:
           DEPLOY_SSH_KEY: ${{ secrets.KNITVENTURE_TAILSCALE_DEPLOY_KEY }}

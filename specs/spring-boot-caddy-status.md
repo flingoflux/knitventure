@@ -1,12 +1,12 @@
-# Backend-Status über Caddy anzeigen
+# Meilenstein 1 – Backend-Status über Caddy bereitstellen
 
-> Quellen [Klärungsdokument](../docs/anforderungen/spring-boot-caddy-klaerung.md) und [Klärung der Review-Befunde](../docs/anforderungen/backend-status-review-klaerung.md) · Stand 2026-11-22 · Status Entwurf
+> Quellen [Klärungsdokument](../docs/anforderungen/spring-boot-caddy-klaerung.md) und [Klärung der Review-Befunde](../docs/anforderungen/backend-status-review-klaerung.md) und [Klärung der verbleibenden Kriterien](../docs/anforderungen/meilenstein-1-rest-klaerung.md) · Stand 2026-11-22 · Status Entwurf
 >
 > Grundlage [ADR 0001](../docs/adr/0001-techstack-und-betriebsmodell.md) · [Slice-Plan](../docs/anforderungen/spring-boot-caddy-klaerung.md#4-vertikale-slices-priorisiert)
 
 ## Wozu
 
-Wer Knitventure lokal öffnet, erkennt, ob das Backend erreichbar ist und ob dort ein lokaler Build läuft. Die Entwicklung kann den ersten durchgehenden Aufruf prüfen und Verstöße gegen den API-Vertrag oder die Backend-Architektur erkennen.
+Wer Knitventure lokal öffnet, erkennt, ob das Backend erreichbar ist und ob dort ein lokaler Build läuft. Die Entwicklung kann den ersten durchgehenden Aufruf prüfen und Verstöße gegen den API-Vertrag oder die Backend-Architektur erkennen. Der Betrieb kann geprüfte Versionen gemeinsam ausliefern und bei einem fehlerhaften Wechsel den zuletzt erfolgreichen Stand wiederherstellen.
 
 ## Regeln
 
@@ -24,6 +24,14 @@ Wer Knitventure lokal öffnet, erkennt, ob das Backend erreichbar ist und ob dor
 - **R12** Beim Start aus kompilierten Klassen meldet das Backend immer `local`. (Review E2)
 - **R13** Fehlt der Wert im Manifest des gepackten Backend-JARs oder verletzt er den API-Vertrag, meldet das Backend `local` und protokolliert beim Start eine Warnung über das fehlende oder ungültige Build-Metadatum. (Review E3)
 - **R14** Jeder Maven-Testlauf prüft das OpenAPI-Schema mit `local` und einer vollständigen Commit-ID unabhängig vom Build-Wert. Der HTTP-Test prüft weiterhin den Wert des laufenden Backends gegen den Vertrag. (Review E4)
+- **R15** Ein dokumentierter lokaler Compose-Aufruf baut und startet Caddy mit Angular und Spring Boot aus dem lokalen Quellstand. (Restklärung E1)
+- **R16** Die PR-CI baut die beiden Images für `linux/amd64` und prüft den Compose-Stack einschließlich Caddy-Konfiguration, Startseite, Assets und SPA-Fallback. (Restklärung E2)
+- **R17** Die PR-CI führt die Maven-Tests einschließlich ArchUnit aus, validiert die versionierte OpenAPI-Datei und prüft die Antwort von `GET /api/status` über Caddy gegen den Vertrag. Jeder Fehler in diesen Prüfungen lässt den Workflow fehlschlagen. (Restklärung E2)
+- **R18** Frontend und Backend werden in öffentlichen GHCR-Paketen bereitgestellt. Die VM kann beide Images und den bisherigen Caddy-Tag ohne Registry-Anmeldung abrufen. (Restklärung E3)
+- **R19** Ein erfolgreicher Push-Build auf `main` veröffentlicht die beiden geprüften Images unter derselben vollständigen Commit-ID als Tag. Das Deployment startet beide Images dieser Version gemeinsam auf der VM. (Restklärung E4)
+- **R20** Das Deploy-Skript übernimmt den neuen Tag erst nach erfolgreichen HTTP-Checks für Startseite und API über Caddy. (Restklärung E4)
+- **R21** Scheitert das erste Backend-Deployment, stellt das Skript den bisherigen Caddy-Stand wieder her und stoppt den Backend-Dienst. Bei späteren Fehlern stellt es das zuletzt erfolgreiche Image-Paar wieder her. Der Deploy-Job endet in beiden Fällen mit Fehler. (Restklärung E5)
+- **R22** Die absichtlich fehlschlagenden HTTP-Checks laufen mit demselben Deploy-Skript in einem isolierten Compose-Test. Auf der Hetzner-VM wird der erfolgreiche Wechsel geprüft. (Restklärung E6)
 
 ## Akzeptanzszenarien
 
@@ -135,6 +143,66 @@ Wer Knitventure lokal öffnet, erkennt, ob das Backend erreichbar ist und ob dor
 - **When** Der Test ruft `GET /api/status` ab.
 - **Then** Er bestätigt HTTP 200, den Medientyp `application/json` und die vertragsgemäße Antwort `{"commitId":"local"}`.
 
+### A19 – Lokalen Stack aus dem Quellstand starten · R15 · SL1
+
+- **Given** Ein ausgecheckter Quellstand ohne vorab gebaute Projektimages.
+- **When** Die Entwicklung führt den dokumentierten lokalen Compose-Aufruf aus.
+- **Then** Compose baut und startet beide Dienste, und `GET /api/status` über Caddy liefert HTTP 200 mit `{"commitId":"local"}`.
+
+### A20 – Stack im Pull Request prüfen · R16, R17 · SL2
+
+- **Given** Ein Pull Request mit gültigem Vertrag und bestandenen Maven-Tests.
+- **When** Der Workflow baut und prüft den Stack.
+- **Then** Beide Images sind für `linux/amd64` gebaut. Caddy-Konfiguration, Startseite, Assets, SPA-Fallback und die API-Antwort über Caddy bestehen die Prüfungen. Der Workflow endet erfolgreich.
+
+### A21 – Architekturverletzung im Pull Request erkennen · R17 · SL2
+
+- **Given** Der Anwendungskern referenziert testweise direkt einen Adapter.
+- **When** Die PR-CI führt die Maven-Tests aus.
+- **Then** ArchUnit meldet diese Abhängigkeit, und der Workflow endet mit Fehler.
+
+### A22 – Ungültigen OpenAPI-Vertrag erkennen · R17 · SL2
+
+- **Given** Die OpenAPI-Datei ist lesbares YAML, aber ihr Pflichtfeld `info` fehlt.
+- **When** Die PR-CI validiert den Vertrag.
+- **Then** Die OpenAPI-Validierung meldet einen Fehler, und der Workflow endet mit Fehler.
+
+### A23 – Vertragswidrige Antwort über Caddy erkennen · R17 · SL2
+
+- **Given** Die Maven-Tests sind grün und die OpenAPI-Datei ist gültig. Beim gemeinsamen HTTP-Test antwortet der Endpunkt über Caddy mit HTTP 200, `application/json` und `{}`.
+- **When** Die PR-CI prüft die Antwort gegen den Vertrag.
+- **Then** Die Vertragsprüfung meldet das fehlende Feld `commitId`, und der Workflow endet mit Fehler.
+
+### A24 – Öffentliche Images und Rückfallversion abrufen · R18 · SL3
+
+- **Given** Beide GHCR-Pakete sind öffentlich, und der bisherige Caddy-Tag ist gespeichert.
+- **When** Die VM prüft vor dem ersten Backend-Deployment den Zugriff aus dem Deployment-Kontext.
+- **Then** Sie lädt beide Images und den bisherigen Caddy-Tag ohne Registry-Anmeldung.
+
+### A25 – Geprüfte Images gemeinsam veröffentlichen · R19 · SL3
+
+- **Given** Ein erfolgreicher Push-Build auf `main` mit der Commit-ID `0123456789abcdef0123456789abcdef01234567`.
+- **When** Der Workflow veröffentlicht die geprüften Images.
+- **Then** Beide getesteten Images sind in ihren öffentlichen GHCR-Paketen unter dem Tag `0123456789abcdef0123456789abcdef01234567` abrufbar.
+
+### A26 – Gemeinsames Deployment auf der VM übernehmen · R19, R20, R22 · SL3
+
+- **Given** Beide öffentlichen Images derselben Commit-ID sind von der VM abrufbar.
+- **When** GitHub Actions deployt den Tag auf der Hetzner-VM.
+- **Then** Beide Dienste laufen mit dem neuen Tag. Startseite und `GET /api/status` liefern über Caddy HTTP 200. Der neue Tag ist erst nach den erfolgreichen HTTP-Checks als aktiver Stand gespeichert, und der Job endet erfolgreich.
+
+### A27 – Beim ersten Deployment zu Caddy zurückwechseln · R20, R21, R22 · SL3
+
+- **Given** Ein isolierter Compose-Test mit demselben Deploy-Skript und einem gespeicherten Caddy-Stand ohne Backend.
+- **When** Beim ersten gemeinsamen Deployment schlägt der HTTP-Check der API absichtlich fehl.
+- **Then** Caddy läuft wieder mit dem bisherigen Tag und liefert die Startseite mit HTTP 200. Der Backend-Dienst ist gestoppt, der gespeicherte Tag bleibt auf dem Caddy-Stand, und der Deploy-Lauf endet mit Fehler.
+
+### A28 – Zum vorherigen Image-Paar zurückwechseln · R20, R21, R22 · SL3
+
+- **Given** Ein isolierter Compose-Test mit demselben Deploy-Skript und einem zuletzt erfolgreich bereitgestellten Image-Paar.
+- **When** Beim nächsten Deployment schlägt der HTTP-Check der API absichtlich fehl.
+- **Then** Beide Dienste laufen wieder mit dem vorherigen gemeinsamen Tag. Startseite und API liefern HTTP 200 über Caddy, der gespeicherte Tag zeigt auf das vorherige Paar, und der Deploy-Lauf endet mit Fehler.
+
 ## Fertig, wenn
 
 - [ ] `npm run build` im Verzeichnis `frontend/` endet mit Exitcode 0.
@@ -143,17 +211,22 @@ Wer Knitventure lokal öffnet, erkennt, ob das Backend erreichbar ist und ob dor
 - [ ] Bestehendes Verhalten unverändert gemäß A9 bis A11.
 - [ ] A12 bis A16 sind am gepackten JAR beziehungsweise beim Start aus kompilierten Klassen anhand von Manifest, HTTP-Antwort und Startprotokoll überprüft.
 - [ ] `mvn -f backend/pom.xml verify` im Repository-Stamm endet mit Exitcode 0 und führt die Schema- und HTTP-Prüfungen aus A17 und A18 aus.
+- [ ] Der dokumentierte lokale Compose-Aufruf erfüllt A19.
+- [ ] Die PR-Workflow-Läufe erfüllen A20 bis A23.
+- [ ] GHCR-Zugriff und Veröffentlichung erfüllen A24 und A25. Der erfolgreiche Lauf auf der VM erfüllt A26, und der isolierte Compose-Test erfüllt A27 und A28.
 
 ## Offen (nicht Teil dieser Spezifikation)
 
-| # | Frage | Wer klärt | Folge bis zur Klärung |
-|---|---|---|---|
-| O1 | Welcher lokale Compose-Aufruf wird nach der Einbindung des Backends dokumentiert? | Entwicklung | Die Abnahme beschreibt das beobachtbare Ergebnis am lokalen Stack. |
+Keine fachlichen Fragen. Der lokale Start ist in der [Frontend-README](../frontend/README.md#frontend-und-backend-gemeinsam-starten) dokumentiert. Die [CI](../.github/workflows/ci.yml) enthält die Prüfaufrufe.
 
-PR-CI und gemeinsames Deployment mit Rückwechsel sind im Slice-Plan als SL2 und SL3 vorgesehen.
+Für die produktive Abnahme müssen die aktualisierte Compose-Datei und das Deploy-Skript auf der VM installiert sein.
 
 ## Slices
 
+Zuordnung zum [Slice-Plan für die verbleibenden Kriterien](../docs/anforderungen/meilenstein-1-rest-klaerung.md#4-vertikale-slices-priorisiert).
+
 | Slice im Klärungsdokument | Szenarien |
 |---|---|
-| SL1 · Status vom Backend bis zur Angular-Seite | A1–A18, davon A12–A18 für die [Absicherung aus dem Review](../docs/anforderungen/backend-status-review-klaerung.md#4-vertikale-slices-priorisiert) |
+| SL1 · Status vom Backend bis zur Angular-Seite | A1–A19, davon A12–A18 für die [Absicherung aus dem Review](../docs/anforderungen/backend-status-review-klaerung.md#4-vertikale-slices-priorisiert) |
+| SL2 · Beide Images und den API-Vertrag in der PR-CI prüfen | A20–A23 |
+| SL3 · Öffentliche Images veröffentlichen und gemeinsam deployen | A24–A28 |

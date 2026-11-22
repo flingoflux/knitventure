@@ -2,6 +2,8 @@
 
 Die geplanten Schritte und ihr Fortschritt stehen in der [Deployment-Roadmap](docs/roadmap.md). Der aktuelle Compose-Stack betreibt Caddy mit der Angular-Willkommensseite.
 
+Nach jeder Umsetzung zu einem Roadmap-Meilenstein und vor dem Abschlussbericht oder Commit die Roadmap prüfen. Ein Kriterium abhaken, sobald es vollständig umgesetzt und geprüft ist. Bei teilweise erfüllten Kriterien den erreichten Stand, den Prüfnachweis und den offenen Teil direkt am Kriterium festhalten.
+
 - Deployment auf einer Hetzner-Cloud-VM (CX23, Ubuntu 24.04 LTS mit Docker CE).
 - Im Zielbild betreibt Docker Compose Caddy, Spring Boot und PostgreSQL auf derselben VM.
 - Angular (TypeScript) wird statisch von Caddy ausgeliefert. Caddy leitet API- und Login-Anfragen an Spring Boot weiter und übernimmt HTTPS, sobald eine Domain eingerichtet ist.
@@ -52,10 +54,9 @@ docker run --rm -p 127.0.0.1:8080:80 knitventure-frontend:local
 
 Die Seite ist unter http://localhost:8080 erreichbar. Der Container wird mit `Ctrl+C` beendet.
 
-# CI/CD
+# Gemeinsamer lokaler Stack und CI/CD
 
-- `.github/workflows/ci.yml` baut bei Pull Requests, Pushes auf `main` und manuellen Starts das Frontend-Image für `linux/amd64`.
-- Vor der Veröffentlichung werden Caddy-Konfiguration, Startseite, JavaScript, CSS und SPA-Fallback geprüft.
-- Auf `main` wird das geprüfte Image als `ghcr.io/flingoflux/knitventure:<vollständige-commit-id>` veröffentlicht. Die Anmeldung erfolgt mit `GITHUB_TOKEN` und `packages: write`.
-- Das Image ist öffentlich abrufbar. Nach einem erfolgreichen Push-Build auf `main` deployt GitHub Actions das geprüfte Image per SSH über Tailscale auf die Hetzner-VM.
-- Mit dem Backend wird die PR-CI um Maven-Tests einschließlich ArchUnit, OpenAPI-Validierung und API-Vertragsprüfungen über Caddy erweitert. Auf `main` sollen beide geprüften Images mit derselben Commit-ID veröffentlicht und gemeinsam deployt werden.
+- `docker compose up --build` im Repository-Stamm baut und startet Caddy mit Angular und Spring Boot. Die Seite ist unter http://localhost:8080 erreichbar.
+- `.github/workflows/ci.yml` baut beide Images für `linux/amd64` und prüft Maven, ArchUnit, OpenAPI, die SPA und die API über Caddy.
+- Bei einem erfolgreichen Push auf `main` veröffentlicht GitHub Actions die geprüften Images in den öffentlichen GHCR-Paketen `ghcr.io/flingoflux/knitventure` und `ghcr.io/flingoflux/knitventure-backend` unter derselben vollständigen Commit-ID. Die Veröffentlichung verwendet `GITHUB_TOKEN` mit `packages: write`.
+- GitHub Actions deployt das Image-Paar per SSH über Tailscale. Der [Rollout](frontend/README.md#auf-hetzner-deployen-und-zurückwechseln) beschreibt die Vorbereitung auf der VM.

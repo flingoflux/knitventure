@@ -19,6 +19,8 @@
 
 Für diesen Meilenstein sind keine fachlichen Fragen offen. Die technische Spezifikation konkretisiert, wie die Commit-ID in den Build gelangt und wie CI bzw. Deployment den HTTP-Check ausführen.
 
+Die [ergänzende Klärung für Meilenstein 1](meilenstein-1-rest-klaerung.md) hält fest, wie die öffentlichen GHCR-Images bereitgestellt werden und welcher Stand beim ersten Backend-Deployment als Rückfallversion dient.
+
 ## 3 Ist / Soll
 
 ### Ist (aus Code und Diagrammen erhoben)
