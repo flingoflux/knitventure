@@ -1,57 +1,43 @@
 # Deployment-Roadmap
 
-Ziel ist die Auslieferung der Angular-Willkommensseite auf der Hetzner-VM mit Docker Compose und Caddy. GitHub Actions baut und veröffentlicht versionierte Container-Images.
+Der technologische Durchstich ist erreicht, wenn sich eine Person auf der bereitgestellten Angular-App über Auth0 anmelden, ein eigenes Avatarbild hochladen und es nach einer erneuten Anmeldung wieder sehen kann. Angular spricht dafür über Caddy mit Spring Boot, das die Sitzung verwaltet und das Nutzerkonto in PostgreSQL speichert. Das Bild liegt in einem persistenten Volume und wird über die API ausgeliefert.
 
-## 1. Frontend als Container vorbereiten
+> Nach Abschluss jedes Meilensteins die Abnahmekriterien abhaken, das Prüfergebnis kurz festhalten und die [Architekturbeschreibung](arc42.md) auf den neuen Ist-Stand bringen. Neue oder geänderte Fachbegriffe im [Glossar](glossar.md) nachführen.
 
-- [x] Mehrstufiges `frontend/Dockerfile` für Angular-Build und Caddy-Auslieferung anlegen.
-- [x] Build-Kontext über `frontend/.dockerignore` begrenzen.
-- [x] `frontend/Caddyfile` für statische Dateien und den SPA-Fallback auf `index.html` anlegen.
-- [x] Image lokal bauen und Caddy-Konfiguration validieren.
-- [x] Startseite, JavaScript, CSS und den Fallback per HTTP prüfen.
-- [x] Lokale Build- und Startbefehle dokumentieren.
+## Erledigt
 
-Lokal auf Docker Desktop (Linux/ARM64) geprüft. Die Container-Konfiguration verwendet für diesen Schritt HTTP auf Port 80. Domain und HTTPS folgen in Schritt 4.
+- [x] **Frontend containerisiert.** Caddy liefert die Angular-Willkommensseite aus. Lokaler Start und SPA-Fallback sind geprüft.
+- [x] **Build und Veröffentlichung automatisiert.** GitHub Actions prüft das Frontend-Image und veröffentlicht auf `main` ein öffentliches, per Commit-ID versioniertes Image.
+- [x] **Erstes Deployment auf Hetzner abgeschlossen.** Docker Compose betreibt Caddy auf der VM. Die Willkommensseite ist über die Server-IP erreichbar und wurde nach einem VM-Neustart geprüft.
+- [x] **Updates automatisiert und Rückwechsel geprüft.** GitHub Actions deployt per SSH über Tailscale. Der manuelle Rückwechsel ist in der [Frontend-README](../frontend/README.md#auf-hetzner-deployen-und-zurückwechseln) dokumentiert.
 
-## 2. Build über GitHub automatisieren
+## Nächste Meilensteine
 
-- [x] GitHub-Actions-Workflow für den Image-Build bei Pull Requests einrichten.
-- [x] Bei Pushes auf `main` das Image nach `ghcr.io/flingoflux/knitventure` veröffentlichen.
-- [x] Images mit der Commit-ID versionieren und für die Architektur der Hetzner-VM bauen.
-- [x] Container-Paket öffentlich zugänglich machen und Abruf ohne Anmeldung prüfen.
+### 1. Spring Boot über Caddy bereitstellen und CI/CD erweitern
 
-Geprüft mit [Workflow-Lauf 44947214203](https://github.com/flingoflux/knitventure/actions/runs/44947214203). Das Image `ghcr.io/flingoflux/knitventure:5047fb6483f69d927c05a0491018724f230dee21` wurde erfolgreich für Linux/AMD64 gebaut, per HTTP geprüft, veröffentlicht und mit leerer Docker-Konfiguration anonym heruntergeladen. Die öffentliche Paketsichtbarkeit wurde kontrolliert.
+- [ ] Das Backend hexagonal strukturieren. HTTP ist ein eingehender Adapter. PostgreSQL und die Avatar-Dateiablage werden später als ausgehende Adapter angebunden. Der Anwendungskern greift über Ports auf sie zu.
+- [ ] Anwendung, Ports und Adapter mit jMolecules kennzeichnen und ihre Abhängigkeiten mit ArchUnit prüfen. Die Tests laufen mit Maven in der PR-CI. Eine testweise direkte Abhängigkeit des Anwendungskerns von einem Adapter lässt den Architekturtest fehlschlagen.
+- [ ] Eine versionierte OpenAPI-Datei als API-Vertrag im Repository ablegen und zunächst `GET /api/status` mit Statuscode, Medientyp und Antwortschema beschreiben. Die PR-CI validiert die Datei und prüft die Antwort über Caddy gegen den Vertrag. Eine ungültige Spezifikation oder eine vertragswidrige Antwort lässt den Workflow fehlschlagen.
+- [ ] Spring Boot mit Maven als Compose-Dienst ergänzen. Der Abruf von `/api/status` über Caddy liefert HTTP 200 mit der erwarteten JSON-Antwort. Angular zeigt den erfolgreich abgerufenen Status an. Startseite, Assets und SPA-Fallback bleiben über Caddy abrufbar.
+- [ ] Bei einem Pull Request baut die CI beide Images für `linux/amd64`, führt die Maven-Tests aus und prüft Caddy und API gemeinsam. Ein fehlgeschlagener Test macht den Workflow rot.
+- [ ] Ein erfolgreicher Push auf `main` veröffentlicht beide geprüften Images mit derselben Commit-ID. GitHub Actions startet beide auf der VM. Das Deploy-Skript prüft Startseite und API über Caddy, bevor es den neuen Tag übernimmt. Bei einem absichtlich fehlschlagenden HTTP-Check stellt es das vorherige Image-Paar wieder her und meldet den Job als fehlgeschlagen.
 
-## 3. Hetzner-VM vorbereiten
+### 2. Domain, HTTPS und Auth0-Login einrichten
 
-- [x] Bestehende VM und Installation von Docker CE und Docker Compose prüfen oder einrichten.
-- [x] SSH-Zugang und Firewall mit den benötigten Ports für SSH, HTTP und HTTPS einrichten.
-- [x] Deployment-Verzeichnis mit `compose.yaml` und persistenten Caddy-Volumes anlegen.
+- [ ] Die Domain zeigt auf die VM. Ein HTTP-Aufruf leitet auf HTTPS weiter und der Browser akzeptiert das von Caddy bereitgestellte Zertifikat.
+- [ ] Aus Angular führt die Anmeldung über Auth0 zurück zur App. Login und OIDC-Callback laufen über Caddy, Spring Security verwaltet die Sitzung. Die App zeigt den angemeldeten Zustand auch nach dem Neuladen an.
+- [ ] Der geschützte Endpunkt `/api/me` liefert mit gültiger Sitzung HTTP 200 und die eigene Identität. In einem frischen Browserfenster ohne Sitzung und nach der Abmeldung liefert derselbe Endpunkt HTTP 401.
+- [ ] OpenAPI beschreibt `GET /api/me` mit Sitzungs-Cookie und den Antworten für HTTP 200 und 401. Die API-Tests prüfen beide Fälle gegen den Vertrag.
 
-Auf der VM `knitventure` (Ubuntu 24.04 LTS, AMD64) sind Docker CE 27.5.1 und Docker Compose 2.32.4 installiert. Docker läuft und startet beim Booten. UFW erlaubt TCP 22, 80 und 443 für IPv4 und IPv6. Der SSH-Zugang per Schlüssel wurde nach Aktivierung der Firewall erneut geprüft.
+### 3. Nutzerkonten in PostgreSQL speichern
 
-Die Datei [`deploy/compose.yaml`](../deploy/compose.yaml) liegt auf der VM unter `/opt/knitventure/compose.yaml`. Die Konfiguration wurde dort mit `docker compose config` und dem veröffentlichten Image-Tag aus Schritt 2 geprüft. Compose legt die persistenten Volumes für `/data` und `/config` beim ersten Start in Schritt 4 an. Die aktuelle Compose-Datei veröffentlicht Port 80. Die Container-Freigabe für Port 443 folgt mit der HTTPS-Konfiguration.
+- [ ] PostgreSQL läuft als Compose-Dienst mit persistentem Volume. Die Migration erstellt auf einer leeren Datenbank genau eine Anwendungstabelle für Nutzerkonten. Ein erneuter Start mit derselben Datenbank gelingt.
+- [ ] Die erste Anmeldung legt genau eine Zeile mit der eindeutigen OIDC-Identität aus Issuer und Subject an. Die erneute Anmeldung verwendet dieselbe Zeile. Ein zweites Auth0-Konto erhält eine eigene Zeile.
+- [ ] Die CI prüft Migration und Kontoanlage gegen PostgreSQL. Auf der VM bleiben beide Konten nach dem Stoppen und erneuten Starten des Compose-Stacks erhalten.
 
-## 4. Erstes Deployment durchführen
+### 4. Eigenes Avatarbild hochladen und anzeigen
 
-- [x] Konkrete Image-Version per Docker Compose starten.
-- [x] Willkommensseite über die Server-IP prüfen.
-- [ ] Domain auf die VM zeigen lassen und Caddy für automatisches HTTPS konfigurieren.
-- [x] Erreichbarkeit nach einem Neustart prüfen.
-
-Als Erstes wurde das Image aus Schritt 2 auf der VM gestartet. Der laufende Tag steht in `/opt/knitventure/.env`. Die [Willkommensseite](http://138.201.187.224/) sowie JavaScript, CSS und der SPA-Fallback wurden über HTTP geprüft. Beide Caddy-Volumes wurden beim Start angelegt.
-
-Nach einem Neustart der VM lief der Caddy-Container automatisch wieder und die Willkommensseite war über die Server-IP erreichbar. Domain und automatisches HTTPS sind vorerst zurückgestellt.
-
-## 5. Updates und Rückwechsel festhalten
-
-- [x] Eine neue Image-Version manuell per SSH deployen.
-- [x] Rückwechsel auf eine vorherige Commit-Version prüfen.
-- [x] Deployment-Befehle und Rückwechsel in der README dokumentieren.
-- [x] Deployment anschließend über GitHub Actions automatisieren.
-
-Der [Workflow-Lauf 44948730197](https://github.com/flingoflux/knitventure/actions/runs/44948730197) veröffentlichte das Image mit Tag `197ab4c7598f9bf69ac96496d4a60fb826514731`. Geprüft wurden das Update auf diesen Tag, der Rückwechsel auf `5047fb6483f69d927c05a0491018724f230dee21` und das erneute Update. Bei jedem Wechsel wurden das laufende Image und die öffentliche Willkommensseite kontrolliert.
-
-Die [Frontend-README](../frontend/README.md#auf-hetzner-deployen-und-zurückwechseln) beschreibt das automatische Deployment und die Befehle für den manuellen Rückwechsel.
-
-Der [Deployment-Job](../.github/workflows/ci.yml) erreicht die VM über Tailscale. Nach dem Merge von [PR #2](https://github.com/flingoflux/knitventure/pull/2) veröffentlichte [Workflow-Lauf 44952080184](https://github.com/flingoflux/knitventure/actions/runs/44952080184) das Image und startete es auf der VM. Geprüft wurden der laufende Tag `f930d89a55e933c6509f10e512af7d154aec2288` und die öffentliche Willkommensseite.
+- [ ] OpenAPI beschreibt Upload und Abruf des Avatars einschließlich Medientypen und Fehlerantworten. Die API-Tests prüfen erfolgreiche und abgewiesene Anfragen gegen den Vertrag.
+- [ ] Angular lädt für das angemeldete Konto ein gültiges PNG- oder JPEG-Bild hoch und zeigt es anschließend an. Die API speichert das Bild im persistenten Volume und die Zuordnung in der Nutzerzeile.
+- [ ] Die API weist ungültige oder zu große Uploads zurück. Ein zuvor gespeicherter Avatar bleibt dabei abrufbar. Ohne Sitzung liefert die API beim Hochladen und Abrufen HTTP 401. Ein zweites Konto kann den Avatar des ersten Kontos weder abrufen noch ändern.
+- [ ] Auf der Hetzner-VM zeigt Angular nach Abmeldung, Neustart des Compose-Stacks und erneuter Anmeldung dasselbe Bild an.

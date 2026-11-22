@@ -33,7 +33,11 @@ docker run --rm -p 127.0.0.1:8080:80 knitventure-frontend:local
 
 Die Willkommensseite ist unter http://localhost:8080 erreichbar. `Ctrl+C` beendet den Container und entfernt ihn. Das Image enthält Caddy und die gebauten statischen Dateien. Caddy liefert bei direkten Aufrufen von Angular-Routen die `index.html` aus.
 
-Die weiteren Schritte stehen in der [Deployment-Roadmap](../docs/roadmap.md).
+## Geplante Backend-Anbindung
+
+Angular soll die Spring-Boot-API über Caddy unter derselben Origin aufrufen. Eine versionierte OpenAPI-Datei beschreibt den HTTP-Vertrag für Status, Nutzerkonto und Avatar. Spring Security verwaltet nach dem Auth0-Login die Sitzung serverseitig.
+
+Das Backend folgt einer hexagonalen Architektur. HTTP, PostgreSQL und die Avatar-Dateiablage sind Adapter. Die geplante PR-CI prüft die Abhängigkeiten mit jMolecules und ArchUnit, validiert die OpenAPI-Datei und prüft die API-Antworten gegen den Vertrag. Die Abnahmekriterien für die Backend-Anbindung und das gemeinsame Deployment stehen in der [Deployment-Roadmap](../docs/roadmap.md).
 
 ## CI/CD
 

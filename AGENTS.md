@@ -1,12 +1,18 @@
 # Deployment und Techstack
 
-Die geplanten Schritte und ihr Fortschritt stehen in der [Deployment-Roadmap](docs/roadmap.md).
+Die geplanten Schritte und ihr Fortschritt stehen in der [Deployment-Roadmap](docs/roadmap.md). Der aktuelle Compose-Stack betreibt Caddy mit der Angular-Willkommensseite.
 
 - Deployment auf einer Hetzner-Cloud-VM (CX23, Ubuntu 24.04 LTS mit Docker CE).
-- Docker Compose betreibt Caddy, Spring Boot und PostgreSQL auf derselben VM.
+- Im Zielbild betreibt Docker Compose Caddy, Spring Boot und PostgreSQL auf derselben VM.
 - Angular (TypeScript) wird statisch von Caddy ausgeliefert. Caddy leitet API- und Login-Anfragen an Spring Boot weiter und übernimmt HTTPS, sobald eine Domain eingerichtet ist.
 - Das Backend verwendet Java, Spring Boot und Maven. Spring Security bindet Auth0 per OpenID Connect an und verwaltet die Sitzung serverseitig.
-- PostgreSQL speichert Challenge-Daten. Private Fotos liegen in persistentem Speicher auf der VM und werden über die API ausgeliefert.
+- Für den Durchstich speichert PostgreSQL Nutzerkonten. Avatarbilder liegen in einem persistenten Volume und werden über die geschützte API ausgeliefert.
+
+# Backend-Architektur und API-Vertrag
+
+- Das Spring-Boot-Backend ist hexagonal aufgebaut. HTTP ist ein eingehender Adapter. Der Anwendungskern bindet PostgreSQL und die Avatar-Dateiablage über ausgehende Ports an.
+- Anwendung, Ports und Adapter mit jMolecules kennzeichnen und ihre Abhängigkeiten mit ArchUnit im Maven-Testlauf prüfen. Der Anwendungskern darf keine direkte Abhängigkeit von einem Adapter haben.
+- Den HTTP-API-Vertrag als versionierte OpenAPI-Datei im Repository pflegen. Änderungen an HTTP-Endpunkten und ihren Antworten gemeinsam mit der Spezifikation und den Vertragstests aktualisieren.
 
 # Frontend bauen und starten
 
@@ -52,3 +58,4 @@ Die Seite ist unter http://localhost:8080 erreichbar. Der Container wird mit `Ct
 - Vor der Veröffentlichung werden Caddy-Konfiguration, Startseite, JavaScript, CSS und SPA-Fallback geprüft.
 - Auf `main` wird das geprüfte Image als `ghcr.io/flingoflux/knitventure:<vollständige-commit-id>` veröffentlicht. Die Anmeldung erfolgt mit `GITHUB_TOKEN` und `packages: write`.
 - Das Image ist öffentlich abrufbar. Nach einem erfolgreichen Push-Build auf `main` deployt GitHub Actions das geprüfte Image per SSH über Tailscale auf die Hetzner-VM.
+- Mit dem Backend wird die PR-CI um Maven-Tests einschließlich ArchUnit, OpenAPI-Validierung und API-Vertragsprüfungen über Caddy erweitert. Auf `main` sollen beide geprüften Images mit derselben Commit-ID veröffentlicht und gemeinsam deployt werden.
