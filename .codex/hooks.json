@@ -1,0 +1,38 @@
+{
+  "description": "Knitventure: Secret-Guard und Maven-Prüfungen",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^(Bash|apply_patch)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "SG_ALLOW='^$' sh \"$(git rev-parse --show-toplevel)/.agents/hooks/secret-guard.sh\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "^apply_patch$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "SG_ALLOW='^$' SG_PATTERN='[.]agents/hooks/|[.](claude|codex)/settings[.]json|[.]codex/hooks[.]json|backend/src/test/java/[^[:space:]]*/architecture/' sh \"$(git rev-parse --show-toplevel)/.agents/hooks/secret-guard.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "root=$(git rev-parse --show-toplevel) || exit 1; if [ -f \"$root/backend/pom.xml\" ]; then QG_ROOT=\"$root\" QG_NAME='Backend- und Architekturtests' QG_PATHS=backend QG_COMMAND='cd backend && if [ -f ./mvnw ]; then sh ./mvnw -q test; else mvn -q test; fi' sh \"$root/.agents/hooks/quality-gate.sh\" >&2 || exit \"$?\"; fi; printf '%s\\n' '{}'",
+            "timeout": 900
+          }
+        ]
+      }
+    ]
+  }
+}
