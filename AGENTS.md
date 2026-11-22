@@ -1,8 +1,8 @@
 # Deployment und Techstack
 
-Die geplanten Schritte und ihr Fortschritt stehen in der [Deployment-Roadmap](docs/roadmap.md). Der aktuelle Compose-Stack betreibt Caddy mit der Angular-Willkommensseite.
+Die geplanten Schritte und ihr Fortschritt stehen in der [Deployment-Roadmap](docs/roadmap.md). Der aktuelle Compose-Stack betreibt Caddy mit der Angular-Willkommensseite und Spring Boot mit der Status-API.
 
-Nach jeder Umsetzung zu einem Roadmap-Meilenstein und vor dem Abschlussbericht oder Commit die Roadmap prüfen. Ein Kriterium abhaken, sobald es vollständig umgesetzt und geprüft ist. Bei teilweise erfüllten Kriterien den erreichten Stand, den Prüfnachweis und den offenen Teil direkt am Kriterium festhalten.
+Nach jeder Umsetzung zu einem Roadmap-Meilenstein und vor dem Abschlussbericht oder Commit die Roadmap prüfen. Ein Kriterium abhaken, sobald es vollständig umgesetzt und geprüft ist. Bei teilweise erfüllten Kriterien den erreichten Stand, den Prüfnachweis und den offenen Teil direkt am Kriterium festhalten. Sind alle Kriterien eines Meilensteins abgehakt, den Meilenstein unter „Erledigt“ ans Ende der Roadmap verschieben. Dort wie bei den bestehenden Einträgen einen einzelnen abgehakten Listenpunkt (`- [x]`) mit fettgedrucktem Kurztitel und einer knappen Zusammenfassung eintragen. Wichtige Prüfnachweise bei Bedarf verlinken. Nach dem Verschieben die verbleibenden offenen Meilensteine ab 1 lückenlos nummerieren und betroffene Verweise auf ihre Überschriften aktualisieren.
 
 - Deployment auf einer Hetzner-Cloud-VM (CX23, Ubuntu 24.04 LTS mit Docker CE).
 - Im Zielbild betreibt Docker Compose Caddy, Spring Boot und PostgreSQL auf derselben VM.

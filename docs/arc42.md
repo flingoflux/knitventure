@@ -29,13 +29,13 @@ Caddy liefert die gebaute SPA aus. Ein mehrstufiger Docker-Build bündelt die st
 ## 6. Laufzeitsicht
 
 - **Seitenaufruf.** Der Browser lädt die Startdatei sowie JavaScript und CSS von Caddy. Bei einem Pfad ohne zugehörige Datei liefert Caddy die Startdatei der SPA.
-- **Update.** Nach einem erfolgreichen Push-Build auf `main` übergibt GitHub Actions die Commit-ID per SSH über Tailscale. Das Deploy-Skript zieht das Image, startet Caddy und übernimmt den Tag nach erfolgreichem HTTP-Test. Bei einem fehlgeschlagenen Start oder HTTP-Test versucht es, die in `.env` gespeicherte Version wiederherzustellen.
+- **Update.** Nach einem erfolgreichen Push-Build auf `main` übergibt GitHub Actions die Commit-ID per SSH über Tailscale. Das Deploy-Skript lädt beide Images, startet Caddy und Spring Boot und übernimmt den Tag nach erfolgreichen HTTP-Checks von Startseite und API. Schlägt der Wechsel fehl, stellt es den in `.env` gespeicherten Stand wieder her.
 
 ## 7. Verteilungssicht
 
-Die VM zieht das öffentlich abrufbare Image aus GHCR. Die [Compose-Konfiguration](../deploy/compose.yaml) betreibt einen Caddy-Container, veröffentlicht Port 80 und bindet persistente Volumes für Caddys Daten und Konfiguration ein. Der Browser führt die Angular-Anwendung aus.
+Die VM kann beide Images öffentlich aus GHCR abrufen. Die [Compose-Konfiguration](../deploy/compose.yaml) betreibt Caddy und Spring Boot. Caddy veröffentlicht Port 80 und bindet persistente Volumes für Daten und Konfiguration ein. Spring Boot ist über Caddy erreichbar. Der Browser führt die Angular-Anwendung aus.
 
-Der [lokale Compose-Stack](../compose.yaml) betreibt Caddy und Spring Boot. Der gemeinsame Rollout ist im Repository vorbereitet. Die produktive Umstellung ist in der Roadmap offen.
+Der [lokale Compose-Stack](../compose.yaml) baut beide Images aus dem Quellstand. Der erste gemeinsame Rollout auf Hetzner ist in der Roadmap dokumentiert.
 
 ## 8. Querschnittliche Konzepte
 

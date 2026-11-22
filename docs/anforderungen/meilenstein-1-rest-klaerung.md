@@ -19,7 +19,7 @@
 
 Keine. Die konkreten Compose- und CI-Befehle gehören in die Umsetzung. Für die produktive Abnahme müssen die aktualisierte Compose-Datei und das Deploy-Skript auf der VM installiert sein. Die vorhandene SSH-Einbindung führt das bereits auf der VM installierte Skript aus.
 
-Das technische GitHub-Konto und der Wechsel auf private GHCR-Pakete sind in [Meilenstein 5 der Roadmap](../roadmap.md#5-technisches-github-konto-für-private-container-images-einrichten) geplant.
+Das technische GitHub-Konto und der Wechsel auf private GHCR-Pakete sind in [Meilenstein 4 der Roadmap](../roadmap.md#4-technisches-github-konto-für-private-container-images-einrichten) geplant.
 
 ## 3 Ist / Soll
 
