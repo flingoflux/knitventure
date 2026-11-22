@@ -15,12 +15,11 @@
 | E5 | Für Inaktivität gilt im Durchstich die Standarddauer von Spring Boot. | Interview |
 | E6 | Die Abmeldung beendet die Sitzungen bei Knitventure und Auth0. Danach liefert `GET /api/me` im selben Browser HTTP 401. | Roadmap und Interview |
 | E7 | Die erste Browserprüfung mit echtem Auth0 erfolgt über den lokalen Compose-Stack. Auf der produktiven HTTPS-Adresse folgt dieselbe Abnahme. Ein frisches Browserfenster ohne Sitzung erhält HTTP 401. | Roadmap und Interview |
+| E8 | Die öffentliche Adresse von Knitventure ist `https://flingoflux.de`. | Auftraggeberin |
 
 ## 2 Offene Fragen an den Fachbereich
 
-| # | Frage | Warum wichtig / was hängt davon ab | Blockiert Slice |
-|---|---|---|---|
-| F1 | Welche öffentliche Adresse erhält Knitventure? | Die Adresse wird für DNS, Caddys Zertifikat, die produktiven Auth0-Callback- und Abmeldeadressen sowie die Browser-Abnahme auf Hetzner benötigt. | SL3 |
+Keine fachlichen Fragen offen.
 
 ## 3 Ist / Soll
 
@@ -37,7 +36,7 @@
 
 | Schritt | Oberfläche | Schnittstelle | Domäne / Betrieb |
 |---|---|---|---|
-| 1. App öffnen (**erweitert**) | Die Startseite ist unter der öffentlichen Adresse im Browser erreichbar. | Caddy leitet HTTP auf HTTPS um und liefert ein vom Browser akzeptiertes Zertifikat. | DNS verweist auf die Hetzner-VM. |
+| 1. App öffnen (**erweitert**) | Die Startseite ist unter `https://flingoflux.de` im Browser erreichbar. | Caddy leitet HTTP auf HTTPS um und liefert ein vom Browser akzeptiertes Zertifikat. | DNS verweist auf die Hetzner-VM. |
 | 2. Anmelden (**neu**) | Die freigeschaltete Testperson startet den Login in Angular und kehrt nach der Anmeldung zurück. Bei Abbruch oder Fehler zeigt die Startseite einen kurzen Hinweis und ermöglicht einen erneuten Versuch. | Login und OIDC-Callback laufen über Caddy. | Auth0 bestätigt die Anmeldeidentität. Spring Security führt die Sitzung. |
 | 3. Identität abrufen (**neu**) | Angular zeigt „Angemeldet“ und „Abmelden“ auch nach erneutem Laden mit gültiger Sitzung. | `GET /api/me` liefert HTTP 200 mit Issuer und Subject oder HTTP 401 ohne gültige Sitzung. | Die Identität stammt aus der serverseitigen Sitzung. Der OpenAPI-Vertrag und die Tests decken beide Antworten ab. |
 | 4. Abmelden (**neu**) | Die Testperson meldet sich von der Startseite aus ab. | Danach antwortet `GET /api/me` mit HTTP 401. | Die Sitzungen bei Knitventure und Auth0 enden. |
@@ -60,4 +59,4 @@
 |---|---|---|---|---|---|---|
 | 1 | SL1 · Lokal anmelden und Identität abrufen | Ein freigeschaltetes Testkonto meldet sich im lokalen Compose-Stack aus Angular über Caddy und Auth0 an. Angular zeigt den Zustand auch nach dem Neuladen. Abbruch und Fehler erlauben einen erneuten Versuch. OpenAPI und Vertragstests decken HTTP 200 mit der Sitzungsidentität und HTTP 401 ohne Sitzung ab. | hoch | hoch | hoch | Testkonto und lokale Auth0-Konfiguration |
 | 2 | SL2 · Bei Knitventure und Auth0 abmelden | Die Abmeldung über Angular beendet beide Sitzungen. Im selben Browser liefert `GET /api/me` danach HTTP 401. | hoch | mittel | mittel | SL1 |
-| 3 | SL3 · Auf Hetzner über HTTPS bereitstellen und abnehmen | Die Domain zeigt auf die VM. HTTP leitet auf HTTPS um und das Zertifikat wird akzeptiert. Login, Neuladen und Abmeldung funktionieren in der bereitgestellten App. `GET /api/me` liefert die eigene Identität mit gültiger Sitzung und HTTP 401 in einem frischen Browserfenster sowie nach der Abmeldung. | hoch | hoch | hoch | SL2, F1 |
+| 3 | SL3 · Auf Hetzner über HTTPS bereitstellen und abnehmen | `flingoflux.de` zeigt auf die VM. HTTP leitet auf HTTPS um und das Zertifikat wird akzeptiert. Login, Neuladen und Abmeldung funktionieren in der bereitgestellten App. `GET /api/me` liefert die eigene Identität mit gültiger Sitzung und HTTP 401 in einem frischen Browserfenster sowie nach der Abmeldung. | hoch | hoch | hoch | SL2 |

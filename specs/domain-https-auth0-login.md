@@ -19,7 +19,7 @@ Freigeschaltete Testpersonen können sich bei Knitventure anmelden und erkennen 
 - **R7** Bei Abbruch oder Fehlschlag der Anmeldung führt der Ablauf zur Startseite zurück. Angular zeigt einen kurzen Hinweis und ermöglicht einen erneuten Anmeldeversuch. (E4)
 - **R8** Bei Inaktivität gilt die Standard-Sitzungsdauer der eingesetzten Spring-Boot-Version. (E5)
 - **R9** „Abmelden“ beendet die Sitzungen bei Knitventure und Auth0. (E6)
-- **R10** Die öffentliche Adresse verweist auf die Hetzner-VM. Caddy leitet HTTP auf HTTPS um und liefert ein vom Browser akzeptiertes Zertifikat. (Roadmap)
+- **R10** `flingoflux.de` verweist im DNS auf die Hetzner-VM. Caddy leitet HTTP auf HTTPS um und liefert ein vom Browser akzeptiertes Zertifikat. (Roadmap und E8)
 - **R11** Die Browser-Abnahme mit echtem Auth0 läuft zuerst im lokalen Compose-Stack und anschließend auf der bereitgestellten HTTPS-App. (E7)
 - **R12** Die Startseite und der Build-Status bleiben öffentlich erreichbar. Die Startseite zeigt weiterhin den Backend-Status. *(Abgeleitet aus der bestehenden öffentlichen Startseite mit Statusanzeige und dem dort startenden Login. [Angular](../frontend/src/app/app.html), [OpenAPI](../api/openapi.yaml), E2.)*
 
@@ -87,13 +87,13 @@ Freigeschaltete Testpersonen können sich bei Knitventure anmelden und erkennen 
 
 ### A11 – HTTP auf HTTPS umleiten · R10 · SL3
 
-- **Given** Die öffentliche App-Adresse ist im DNS auf die Hetzner-VM eingerichtet.
-- **When** Ein Browser öffnet die Adresse über HTTP.
-- **Then** Der Browser folgt der von Caddy gelieferten Weiterleitung zur HTTPS-Adresse und zeigt die Startseite ohne Zertifikatswarnung.
+- **Given** `flingoflux.de` ist im DNS auf die Hetzner-VM eingerichtet.
+- **When** Ein Browser öffnet `http://flingoflux.de`.
+- **Then** Der Browser folgt der von Caddy gelieferten Weiterleitung zu `https://flingoflux.de` und zeigt die Startseite ohne Zertifikatswarnung.
 
 ### A12 – Anmeldeablauf lokal und auf Hetzner abnehmen · R2–R5, R9, R11 · SL3
 
-- **Given** Für den lokalen Compose-Stack und die öffentliche HTTPS-App sind die jeweils passenden Auth0-Einstellungen vorhanden.
+- **Given** Für den lokalen Compose-Stack und die App unter `https://flingoflux.de` sind die jeweils passenden Auth0-Einstellungen vorhanden.
 - **When** Eine Testperson prüft den Ablauf zuerst lokal und anschließend auf Hetzner. Sie ruft `/api/me` ohne Sitzung in einem frischen Browserprofil auf, meldet sich an, lädt die Startseite neu und meldet sich ab.
 - **Then** Beide Prüfungen ergeben der Reihe nach HTTP 401 ohne Sitzung, HTTP 200 mit der Identität des Testkontos, „Angemeldet“ nach dem Neuladen und HTTP 401 nach der Abmeldung. Login und OIDC-Callback laufen in beiden Umgebungen über Caddy.
 
@@ -108,9 +108,7 @@ Freigeschaltete Testpersonen können sich bei Knitventure anmelden und erkennen 
 
 ## Offen (nicht Teil dieser Spezifikation)
 
-| # | Frage | Wer klärt | Folge bis zur Klärung |
-|---|---|---|---|
-| O1 (F1 der Klärung) | Welche konkrete öffentliche Domain erhält Knitventure? | Auftraggeberin | Die konkrete DNS-Konfiguration, die produktiven Callback- und Abmeldeadressen sowie die Abnahme auf Hetzner warten auf diese Entscheidung. Die lokale Abnahme kann vorher erfolgen. |
+Keine fachlichen Fragen offen.
 
 ## Slices
 
