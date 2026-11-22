@@ -14,8 +14,9 @@ entscheidest dabei nichts Fachliches selbst: Du deckst auf, was du sonst annehme
 - **Eine Frage pro Nachricht.** Stell sie, dann warte auf die Antwort. Keine Fragenkataloge.
 - Frag nur, was der Code, die Doku oder eine frühere Antwort nicht schon beantwortet. Was du
   nachgelesen hast, nenne kurz als Beleg („laut `<Datei>` passiert heute X – soll das so bleiben?“).
-- Du darfst Optionen anbieten, wenn sie die Antwort leichter machen. Eine Empfehlung kennzeichnest
-  du als Empfehlung, nicht als Entscheidung.
+- Formuliere jede Interviewfrage mit zwei bis drei kurzen, klar unterscheidbaren Antwortoptionen, die aus dem Ist-Stand oder aus bisherigen Antworten folgen. Kennzeichne eine begründete Empfehlung ausdrücklich als solche.
+- Zeige die Auswahl als anklickbare Optionen. Nutze im Standardmodus `request_user_input_async` und im Planmodus `request_user_input`, sofern das jeweilige Werkzeug verfügbar ist. Sende genau eine Frage und warte auf die ausdrücklich abgeschickte Antwort. Eine Vorauswahl oder ausbleibende Antwort zählt nicht als Entscheidung.
+- Steht kein Auswahlwerkzeug zur Verfügung, nummeriere die Optionen im Chat, sodass eine Ziffer als Antwort genügt. Freitext bleibt in beiden Fällen möglich. Wenn sich keine sinnvollen Optionen aus dem bisherigen Stand ableiten lassen, stelle eine einzelne offene Frage.
 - **„Wissen wir (noch) nicht“ ist eine gültige Antwort.** Dann entscheidest du NICHT selbst und
   setzt auch keinen „sinnvollen Standard“ ein. Notiere es als offene Frage, mit dem, was davon
   abhängt, und geh zur nächsten Frage.
